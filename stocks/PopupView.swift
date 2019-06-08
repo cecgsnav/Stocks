@@ -14,26 +14,38 @@ struct PopupView: View {
     var close: Binding<Bool>
     
     var body: some View {
-        return VStack {
-            Text(self.viewModel.detailInfo.stock.symbol)
+        VStack {
+            Text(self.viewModel.stock.symbol)
                 .font(.title)
+                .kerning(3)
                 .padding(.bottom, 15)
-
+            
             FieldView(title: "Company name:",
-                      subtitle: self.viewModel.detailInfo.stock.name)
+                      subtitle: self.viewModel.stock.name)
             
             FieldView(title: "Sector:",
-                      subtitle: self.viewModel.detailInfo.stock.sector)
-
+                      subtitle: self.viewModel.stock.sector)
+            
+            Divider()
+            
             VStack {
-            ForEach(self.viewModel.detailInfo.fluctuation.identified(by: \.self)) { row in
-                HStack(alignment: .firstTextBaseline) {
-                    Text(self.viewModel.getReadableDate(date: row.date))
-                    Text(row.open.description)
-                    Text(row.close.description)
+                Text("Stock value in the last week")
+                    .font(.headline)
+                    .bold()
+                    .padding(.bottom, 10)
+                
+                ForEach(self.viewModel.fluctuation.sorted(by: ({ $0.date < $1.date})).identified(by: \.self)) { row in
+                    HStack(alignment: .firstTextBaseline) {
+                        Spacer()
+                        Text(self.viewModel.getReadableDate(date: row.date))
+                        Spacer()
+                        self.viewModel.getDifferenceStockValue(fluctuation: row)
+                        Spacer()
+                    }
                 }
             }
-            }
+            
+            Divider()
             
             Button(action: {
                 withAnimation(.basic(duration: 1)) {
@@ -42,7 +54,7 @@ struct PopupView: View {
             }) {
                 Text("Close")
                     .color(Color.blue)
-            }
+                }
                 .padding(.top, 15)
             
             }
@@ -61,8 +73,8 @@ struct FieldView: View {
         HStack {
             Text(title + " ")
             Text(subtitle ?? "").bold()
-                //.relativeWidth(0.5).lineLimit(-1)
-        }
-            .padding()
+            //.relativeWidth(0.5).lineLimit(-1)
+            }
+            .padding(.bottom, 10)
     }
 }

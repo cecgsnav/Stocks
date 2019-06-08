@@ -20,7 +20,9 @@ final class PopupViewModel: BindableObject {
         }
     }
     
-    var detailInfo: StockDetailViewModel = (stock: dummySymbol, fluctuation: [dummyFluctuation]) {
+    let stock: Symbol
+    
+    var fluctuation: [Fluctuation] = [] {
         didSet {
             isDoneLoading = true
             didChange.send(self)
@@ -32,6 +34,7 @@ final class PopupViewModel: BindableObject {
     }
     
     init(stock: Symbol) {
+        self.stock = stock
         getDetailInfo(for: stock)
     }
     
@@ -40,6 +43,21 @@ final class PopupViewModel: BindableObject {
         dateFormatterPrint.dateFormat = "MMM dd,yyyy"
         
         return dateFormatterPrint.string(from: date)
+    }
+    
+    func getDifferenceStockValue(fluctuation: Fluctuation) -> Text {
+        let difference = fluctuation.close - fluctuation.open
+        let differenceRounded = String(format: "%.2f", difference)
+        switch difference {
+        case ...0:
+            return Text("↓ \(differenceRounded)").color(.red)
+        case 0...:
+            return Text("↑ \(differenceRounded)").color(.green)
+        case 0:
+            return Text("\(differenceRounded)").color(.black)
+        default:
+            return Text("Range error")
+        }
     }
     
     func getDetailInfo(for stock: Symbol) {
@@ -58,7 +76,7 @@ final class PopupViewModel: BindableObject {
                                  cachePolicy: .useProtocolCachePolicy,
                                  timeoutInterval: 60)
         
-        let assign = Subscribers.Assign(object: self, keyPath: \.detailInfo)
+        let assign = Subscribers.Assign(object: self, keyPath: \.fluctuation)
         cancellable = assign
         
         let decoder = JSONDecoder()
@@ -70,7 +88,6 @@ final class PopupViewModel: BindableObject {
             .map { $0.data }
             .decode(type: [Fluctuation].self, decoder: decoder)
             .replaceError(with: [])
-            .map({ (stock: stock, fluctuation: $0) })
             .receive(subscriber: assign)
     }
     
